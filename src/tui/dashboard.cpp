@@ -257,10 +257,11 @@ int Dashboard::Run() {
     std::optional<DrillMode> requested_mode;
     std::optional<RecallVariant> requested_variant;
     bool requested_manage = false;
-    const Palette palette = ThemeByIndex(ui_settings.theme_index, ui_settings.use_theme_background);
-    const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
 
     auto renderer = Renderer([&] {
+      const Palette palette = ThemeByIndex(ui_settings.theme_index, ui_settings.use_theme_background);
+      const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
+
       if (books_.empty()) {
         return vbox({
                    text("WordRush") | bold | color(palette.blue),
@@ -344,7 +345,9 @@ int Dashboard::Run() {
                            hbox(Elements{
                                text("WordRush") | bold | color(Color::RGB(248, 227, 179)),
                                filler(),
-                               text("选词本 -> 按数字 -> 开练") | color(palette.muted),
+                               text(palette.name + "  ·  " +
+                                        std::string(palette.use_background ? "主题背景开" : "终端背景开")) |
+                                   color(palette.muted),
                            }),
                            separator(),
                            hbox(Elements{
@@ -390,7 +393,7 @@ int Dashboard::Run() {
       if (overlay == Overlay::Help) {
         Element modal = vbox({
                             filler(),
-                            hbox({filler(), HelpModal(palette), filler()}),
+                            hbox(Elements{filler(), HelpModal(palette), filler()}),
                             filler(),
                         }) |
                         bgcolor(palette.overlay);
@@ -400,7 +403,7 @@ int Dashboard::Run() {
       if (overlay == Overlay::Plan) {
         Element modal = vbox({
                             filler(),
-                            hbox({filler(), PlanModal(current, shortcuts, plan, palette), filler()}),
+                            hbox(Elements{filler(), PlanModal(current, shortcuts, plan, palette), filler()}),
                             filler(),
                         }) |
                         bgcolor(palette.overlay);
