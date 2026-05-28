@@ -21,6 +21,7 @@ find_package(SQLite3 QUIET)
 
 add_library(wordrush_core
   src/core/companion.cpp
+  src/core/settings.cpp
   src/core/theme.cpp
   src/core/training.cpp
   src/core/types.cpp

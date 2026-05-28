@@ -14,6 +14,7 @@
 
 #include "wordrush/companion.hpp"
 #include "wordrush/drill_session.hpp"
+#include "wordrush/settings.hpp"
 #include "wordrush/theme.hpp"
 
 namespace wordrush {
@@ -176,8 +177,7 @@ int Dashboard::Run() {
     Plan,
   };
 
-  std::size_t theme_index = 0;
-  bool use_theme_background = true;
+  UiSettings ui_settings = LoadUiSettings(project_root_);
   std::size_t selected = 0;
 
   auto refresh = [&] {
@@ -257,7 +257,7 @@ int Dashboard::Run() {
     std::optional<DrillMode> requested_mode;
     std::optional<RecallVariant> requested_variant;
     bool requested_manage = false;
-    const Palette palette = ThemeByIndex(theme_index, use_theme_background);
+    const Palette palette = ThemeByIndex(ui_settings.theme_index, ui_settings.use_theme_background);
     const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
 
     auto renderer = Renderer([&] {
@@ -456,12 +456,14 @@ int Dashboard::Run() {
       }
 
       if (event == Event::Character('t')) {
-        theme_index = (theme_index + 1) % BuiltinThemes().size();
+        ui_settings.theme_index = (ui_settings.theme_index + 1) % BuiltinThemes().size();
+        SaveUiSettings(project_root_, ui_settings);
         return true;
       }
 
       if (event == Event::Character('b')) {
-        use_theme_background = !use_theme_background;
+        ui_settings.use_theme_background = !ui_settings.use_theme_background;
+        SaveUiSettings(project_root_, ui_settings);
         return true;
       }
 
@@ -525,8 +527,8 @@ int Dashboard::Run() {
     DrillSession session(std::move(detail),
                          *requested_mode,
                          requested_variant.value_or(RecallVariant::CnToEn),
-                         theme_index,
-                         use_theme_background);
+                         ui_settings.theme_index,
+                         ui_settings.use_theme_background);
     session.Run();
   }
 }
