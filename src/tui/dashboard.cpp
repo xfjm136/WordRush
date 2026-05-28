@@ -14,6 +14,7 @@
 
 #include "wordrush/companion.hpp"
 #include "wordrush/drill_session.hpp"
+#include "wordrush/theme.hpp"
 
 namespace wordrush {
 
@@ -21,23 +22,7 @@ namespace {
 
 using namespace ftxui;
 
-struct Palette {
-  Color background = Color::RGB(30, 30, 46);
-  Color surface = Color::RGB(49, 50, 68);
-  Color surface_alt = Color::RGB(69, 71, 90);
-  Color focus = Color::RGB(88, 91, 112);
-  Color text = Color::RGB(205, 214, 244);
-  Color muted = Color::RGB(166, 173, 200);
-  Color subtle = Color::RGB(127, 132, 156);
-  Color blue = Color::RGB(137, 180, 250);
-  Color green = Color::RGB(166, 227, 161);
-  Color peach = Color::RGB(250, 179, 135);
-  Color overlay = Color::RGB(24, 24, 37);
-};
-
-Palette Theme() {
-  return {};
-}
+using Palette = ThemePalette;
 
 Color AccentColor(const std::string& accent) {
   if (accent == "amber") return Color::RGB(249, 226, 175);
@@ -113,25 +98,17 @@ Element ShortcutLine(const ShortcutSpec& spec, const Palette& palette) {
 }
 
 Element CompanionCard(const CompanionState& companion, const Palette& palette) {
-  Elements actions;
-  for (const auto& action : companion.actions) {
-    actions.push_back(text("· " + action) | color(palette.subtle));
-  }
-
+  std::string action_line = companion.actions.empty() ? "陪你背词" : companion.actions.front();
   return vbox({
              hbox({
                  text(companion.name) | bold | color(palette.green),
                  filler(),
                  text("Lv." + std::to_string(companion.level)) | color(palette.blue),
              }),
-             text(companion.mood + " · " + companion.posture) | color(palette.muted),
-             separator(),
              text(companion.ascii_art) | color(palette.text),
+             text(companion.mood + " · " + action_line) | color(palette.muted),
              separator(),
              text(companion.speech) | color(palette.text),
-             separator(),
-             text("会做的事") | bold,
-             vbox(std::move(actions)),
          }) |
          borderRounded | bgcolor(palette.surface_alt);
 }
@@ -199,8 +176,8 @@ int Dashboard::Run() {
     Plan,
   };
 
-  const Palette palette = Theme();
-  const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
+  std::size_t theme_index = 0;
+  bool use_theme_background = true;
   std::size_t selected = 0;
 
   auto refresh = [&] {
@@ -280,6 +257,8 @@ int Dashboard::Run() {
     std::optional<DrillMode> requested_mode;
     std::optional<RecallVariant> requested_variant;
     bool requested_manage = false;
+    const Palette palette = ThemeByIndex(theme_index, use_theme_background);
+    const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
 
     auto renderer = Renderer([&] {
       if (books_.empty()) {
@@ -309,15 +288,17 @@ int Dashboard::Run() {
           "当前词本",
           vbox({
               hbox({
-                  text(current.meta.title) | bold,
+                  text(current.meta.title) | bold | color(palette.text),
                   filler(),
                   text(current.meta.exam) | color(accent),
               }),
               text(current.meta.track) | color(palette.muted),
               separator(),
-              StatLine("总数", std::to_string(current.meta.total_entries), palette, palette.blue),
-              StatLine("到期", std::to_string(current.progress.due_now), palette, palette.peach),
-              StatLine("掌握", Percent(current.progress.mastery_ratio(current.meta.total_entries)), palette,
+              text(current.meta.description) | color(palette.text),
+              separator(),
+              StatLine("词条总数", std::to_string(current.meta.total_entries), palette, palette.blue),
+              StatLine("待复习", std::to_string(current.progress.due_now), palette, palette.peach),
+              StatLine("掌握率", Percent(current.progress.mastery_ratio(current.meta.total_entries)), palette,
                        palette.green),
           }),
           palette);
@@ -329,12 +310,23 @@ int Dashboard::Run() {
 
       Element shortcut_panel = Section("开始训练", vbox(std::move(shortcut_lines)), palette);
 
+      Element status_panel = Section(
+          "今日状态",
+          vbox({
+              StatLine("今日待复习", std::to_string(current.progress.due_now), palette, palette.peach),
+              StatLine("连续天数", std::to_string(current.progress.streak_days), palette, palette.blue),
+              StatLine("预计耗时", std::to_string(current.progress.estimated_minutes) + " 分钟", palette,
+                       palette.green),
+          }),
+          palette);
+
       Element action_panel = Section(
           "管理词本",
           vbox({
-              text("m: 导入 / 删除 / 合并 / 拆分") | color(palette.text),
-              text("Enter: 查看今天建议") | color(palette.muted),
-              text("数字键: 直接开始对应训练") | color(palette.muted),
+              text("m 导入 / 删除 / 合并 / 拆分") | color(palette.text),
+              text("Enter 查看今天建议") | color(palette.muted),
+              text("1-5 直接训练") | color(palette.muted),
+              text("t 切换主题  b 切换背景") | color(palette.muted),
           }),
           palette);
 
@@ -342,41 +334,58 @@ int Dashboard::Run() {
           "今天建议",
           vbox({
               text(plan.headline.empty() ? "按数字直接开始即可。" : plan.headline) | color(palette.text),
-              text("先训练，再管理。") | color(palette.muted),
+              text("单词优先，伙伴只做提示与反馈。") | color(palette.muted),
           }),
           palette);
 
       Element companion_panel = Section("陪练伙伴", CompanionCard(companion, palette), palette);
 
-      Element layout = vbox({
-                           hbox({
+      Element layout = vbox(Elements{
+                           hbox(Elements{
                                text("WordRush") | bold | color(Color::RGB(248, 227, 179)),
-                               text("  选词本 -> 按数字 -> 开练") | color(palette.muted),
+                               filler(),
+                               text("选词本 -> 按数字 -> 开练") | color(palette.muted),
                            }),
                            separator(),
-                           hbox({
-                               books_panel | size(WIDTH, EQUAL, 30),
+                           hbox(Elements{
+                               books_panel | size(WIDTH, EQUAL, 24),
                                separator(),
-                               vbox({
-                                   current_panel,
-                                   shortcut_panel,
-                                   action_panel,
-                                   today_panel,
-                                   companion_panel,
+                               vbox(Elements{
+                                   hbox(Elements{
+                                       current_panel | flex,
+                                       separator(),
+                                       status_panel | size(WIDTH, EQUAL, 22),
+                                    }),
+                                    separator(),
+                                    shortcut_panel,
+                                    separator(),
+                                    today_panel,
                                }) | flex,
+                               separator(),
+                               vbox(Elements{
+                                   companion_panel,
+                                   separator(),
+                                   action_panel,
+                               }) | size(WIDTH, EQUAL, 24),
                            }) |
                                flex,
                            separator(),
-                           hbox({
+                           hbox(Elements{
                                text("j / k 切换") | color(palette.muted),
                                filler(),
                                text("1 速刷  2 中译英  3 英译中  4 混译  5 错词") | color(palette.blue),
                                text("   m 管理") | color(palette.muted),
+                               text("   t 主题") | color(palette.muted),
+                               text("   b 背景") | color(palette.muted),
                                text("   ? 帮助") | color(palette.muted),
                                text("   q 退出") | color(palette.muted),
-                           }),
-                       }) |
-                       bgcolor(palette.background) | color(palette.text);
+                            }),
+                        }) |
+                        color(palette.text);
+
+      if (palette.use_background) {
+        layout = layout | bgcolor(palette.background);
+      }
 
       if (overlay == Overlay::Help) {
         Element modal = vbox({
@@ -446,6 +455,16 @@ int Dashboard::Run() {
         return true;
       }
 
+      if (event == Event::Character('t')) {
+        theme_index = (theme_index + 1) % BuiltinThemes().size();
+        return true;
+      }
+
+      if (event == Event::Character('b')) {
+        use_theme_background = !use_theme_background;
+        return true;
+      }
+
       if (event == Event::Return) {
         overlay = Overlay::Plan;
         return true;
@@ -503,7 +522,11 @@ int Dashboard::Run() {
     WordBookRepository repository(project_root_);
     WordBookDetail detail = repository.LoadBookDetail(books_[selected].meta.id);
     detail.progress = books_[selected].progress;
-    DrillSession session(std::move(detail), *requested_mode, requested_variant.value_or(RecallVariant::CnToEn));
+    DrillSession session(std::move(detail),
+                         *requested_mode,
+                         requested_variant.value_or(RecallVariant::CnToEn),
+                         theme_index,
+                         use_theme_background);
     session.Run();
   }
 }

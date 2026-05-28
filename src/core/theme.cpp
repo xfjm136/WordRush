@@ -1,0 +1,156 @@
+#include "wordrush/theme.hpp"
+
+#include <algorithm>
+
+namespace wordrush {
+
+std::vector<ThemePalette> BuiltinThemes() {
+  return {
+      {
+          .background = ftxui::Color::RGB(30, 30, 46),
+          .surface = ftxui::Color::RGB(49, 50, 68),
+          .surface_alt = ftxui::Color::RGB(69, 71, 90),
+          .focus = ftxui::Color::RGB(88, 91, 112),
+          .text = ftxui::Color::RGB(205, 214, 244),
+          .muted = ftxui::Color::RGB(166, 173, 200),
+          .subtle = ftxui::Color::RGB(127, 132, 156),
+          .blue = ftxui::Color::RGB(137, 180, 250),
+          .green = ftxui::Color::RGB(166, 227, 161),
+          .peach = ftxui::Color::RGB(250, 179, 135),
+          .info = ftxui::Color::RGB(137, 180, 250),
+          .success = ftxui::Color::RGB(166, 227, 161),
+          .warning = ftxui::Color::RGB(250, 179, 135),
+          .accent = ftxui::Color::RGB(203, 166, 247),
+          .overlay = ftxui::Color::RGB(24, 24, 37),
+          .use_background = true,
+          .name = "Catppuccin Mocha",
+      },
+      {
+          .background = ftxui::Color::RGB(26, 27, 38),
+          .surface = ftxui::Color::RGB(36, 40, 59),
+          .surface_alt = ftxui::Color::RGB(51, 56, 82),
+          .focus = ftxui::Color::RGB(65, 72, 104),
+          .text = ftxui::Color::RGB(192, 202, 245),
+          .muted = ftxui::Color::RGB(162, 177, 214),
+          .subtle = ftxui::Color::RGB(122, 135, 178),
+          .blue = ftxui::Color::RGB(125, 207, 255),
+          .green = ftxui::Color::RGB(158, 206, 106),
+          .peach = ftxui::Color::RGB(255, 158, 100),
+          .info = ftxui::Color::RGB(125, 207, 255),
+          .success = ftxui::Color::RGB(158, 206, 106),
+          .warning = ftxui::Color::RGB(255, 158, 100),
+          .accent = ftxui::Color::RGB(187, 154, 247),
+          .overlay = ftxui::Color::RGB(22, 22, 30),
+          .use_background = true,
+          .name = "Tokyo Night",
+      },
+      {
+          .background = ftxui::Color::RGB(46, 52, 64),
+          .surface = ftxui::Color::RGB(59, 66, 82),
+          .surface_alt = ftxui::Color::RGB(67, 76, 94),
+          .focus = ftxui::Color::RGB(76, 86, 106),
+          .text = ftxui::Color::RGB(236, 239, 244),
+          .muted = ftxui::Color::RGB(216, 222, 233),
+          .subtle = ftxui::Color::RGB(143, 188, 187),
+          .blue = ftxui::Color::RGB(129, 161, 193),
+          .green = ftxui::Color::RGB(163, 190, 140),
+          .peach = ftxui::Color::RGB(208, 135, 112),
+          .info = ftxui::Color::RGB(129, 161, 193),
+          .success = ftxui::Color::RGB(163, 190, 140),
+          .warning = ftxui::Color::RGB(208, 135, 112),
+          .accent = ftxui::Color::RGB(180, 142, 173),
+          .overlay = ftxui::Color::RGB(40, 46, 57),
+          .use_background = true,
+          .name = "Nord",
+      },
+      {
+          .background = ftxui::Color::RGB(31, 31, 40),
+          .surface = ftxui::Color::RGB(42, 42, 53),
+          .surface_alt = ftxui::Color::RGB(54, 54, 69),
+          .focus = ftxui::Color::RGB(65, 65, 83),
+          .text = ftxui::Color::RGB(220, 215, 186),
+          .muted = ftxui::Color::RGB(196, 193, 176),
+          .subtle = ftxui::Color::RGB(147, 140, 115),
+          .blue = ftxui::Color::RGB(124, 182, 204),
+          .green = ftxui::Color::RGB(152, 187, 108),
+          .peach = ftxui::Color::RGB(255, 160, 102),
+          .info = ftxui::Color::RGB(124, 182, 204),
+          .success = ftxui::Color::RGB(152, 187, 108),
+          .warning = ftxui::Color::RGB(255, 160, 102),
+          .accent = ftxui::Color::RGB(149, 136, 201),
+          .overlay = ftxui::Color::RGB(24, 24, 31),
+          .use_background = true,
+          .name = "Kanagawa",
+      },
+      {
+          .background = ftxui::Color::RGB(40, 44, 52),
+          .surface = ftxui::Color::RGB(50, 56, 66),
+          .surface_alt = ftxui::Color::RGB(62, 68, 81),
+          .focus = ftxui::Color::RGB(73, 79, 94),
+          .text = ftxui::Color::RGB(171, 178, 191),
+          .muted = ftxui::Color::RGB(146, 152, 163),
+          .subtle = ftxui::Color::RGB(92, 99, 112),
+          .blue = ftxui::Color::RGB(97, 175, 239),
+          .green = ftxui::Color::RGB(152, 195, 121),
+          .peach = ftxui::Color::RGB(209, 154, 102),
+          .info = ftxui::Color::RGB(97, 175, 239),
+          .success = ftxui::Color::RGB(152, 195, 121),
+          .warning = ftxui::Color::RGB(209, 154, 102),
+          .accent = ftxui::Color::RGB(198, 120, 221),
+          .overlay = ftxui::Color::RGB(34, 37, 43),
+          .use_background = true,
+          .name = "One Dark",
+      },
+      {
+          .background = ftxui::Color::RGB(40, 42, 54),
+          .surface = ftxui::Color::RGB(56, 58, 72),
+          .surface_alt = ftxui::Color::RGB(68, 71, 90),
+          .focus = ftxui::Color::RGB(80, 84, 106),
+          .text = ftxui::Color::RGB(248, 248, 242),
+          .muted = ftxui::Color::RGB(189, 147, 249),
+          .subtle = ftxui::Color::RGB(139, 233, 253),
+          .blue = ftxui::Color::RGB(139, 233, 253),
+          .green = ftxui::Color::RGB(80, 250, 123),
+          .peach = ftxui::Color::RGB(255, 184, 108),
+          .info = ftxui::Color::RGB(139, 233, 253),
+          .success = ftxui::Color::RGB(80, 250, 123),
+          .warning = ftxui::Color::RGB(255, 184, 108),
+          .accent = ftxui::Color::RGB(255, 121, 198),
+          .overlay = ftxui::Color::RGB(32, 34, 44),
+          .use_background = true,
+          .name = "Dracula",
+      },
+      {
+          .background = ftxui::Color::RGB(0, 43, 54),
+          .surface = ftxui::Color::RGB(7, 54, 66),
+          .surface_alt = ftxui::Color::RGB(88, 110, 117),
+          .focus = ftxui::Color::RGB(101, 123, 131),
+          .text = ftxui::Color::RGB(238, 232, 213),
+          .muted = ftxui::Color::RGB(147, 161, 161),
+          .subtle = ftxui::Color::RGB(88, 110, 117),
+          .blue = ftxui::Color::RGB(38, 139, 210),
+          .green = ftxui::Color::RGB(133, 153, 0),
+          .peach = ftxui::Color::RGB(203, 75, 22),
+          .info = ftxui::Color::RGB(38, 139, 210),
+          .success = ftxui::Color::RGB(133, 153, 0),
+          .warning = ftxui::Color::RGB(203, 75, 22),
+          .accent = ftxui::Color::RGB(211, 54, 130),
+          .overlay = ftxui::Color::RGB(0, 34, 43),
+          .use_background = true,
+          .name = "Solarized Dark",
+      },
+  };
+}
+
+ThemePalette ThemeByIndex(std::size_t index, bool use_background) {
+  auto themes = BuiltinThemes();
+  if (themes.empty()) {
+    return {};
+  }
+  index = std::min(index, themes.size() - 1);
+  ThemePalette palette = themes[index];
+  palette.use_background = use_background;
+  return palette;
+}
+
+}  // namespace wordrush

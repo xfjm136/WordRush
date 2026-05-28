@@ -13,6 +13,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "wordrush/companion.hpp"
+#include "wordrush/theme.hpp"
 
 namespace wordrush {
 
@@ -20,22 +21,7 @@ namespace {
 
 using namespace ftxui;
 
-struct Palette {
-  Color background = Color::RGB(30, 30, 46);
-  Color surface = Color::RGB(49, 50, 68);
-  Color surface_focus = Color::RGB(69, 71, 90);
-  Color text = Color::RGB(205, 214, 244);
-  Color muted = Color::RGB(166, 173, 200);
-  Color subtle = Color::RGB(127, 132, 156);
-  Color success = Color::RGB(166, 227, 161);
-  Color warning = Color::RGB(250, 179, 135);
-  Color info = Color::RGB(137, 180, 250);
-  Color accent = Color::RGB(203, 166, 247);
-};
-
-Palette Theme() {
-  return {};
-}
+using Palette = ThemePalette;
 
 std::string Lower(std::string_view text) {
   std::string lowered(text);
@@ -126,6 +112,21 @@ Element TinyPanel(const std::string& title, Element body, const Palette& palette
              std::move(body),
          }) |
          borderRounded | bgcolor(palette.surface);
+}
+
+Element CompanionPanel(const CompanionState& companion, const Palette& palette) {
+  return vbox(Elements{
+             hbox(Elements{
+                 text(companion.name) | bold | color(palette.green),
+                 filler(),
+                 text("Lv." + std::to_string(companion.level)) | color(palette.blue),
+             }),
+             text(companion.ascii_art) | color(palette.text),
+             separator(),
+             text(companion.mood + " · " + companion.posture) | color(palette.muted),
+             text(companion.speech) | color(palette.text),
+         }) |
+         borderRounded | bgcolor(palette.surface_alt);
 }
 
 std::string BuildPrompt(const WordBookItem& item, DrillMode mode, RecallVariant recall_variant) {
@@ -225,13 +226,21 @@ std::string RevealAnswer(const WordBookItem& item, DrillMode mode, RecallVariant
 
 }  // namespace
 
-DrillSession::DrillSession(WordBookDetail book, DrillMode mode, RecallVariant recall_variant)
-    : book_(std::move(book)), mode_(mode), recall_variant_(recall_variant) {}
+DrillSession::DrillSession(WordBookDetail book,
+                           DrillMode mode,
+                           RecallVariant recall_variant,
+                           std::size_t theme_index,
+                           bool use_theme_background)
+    : book_(std::move(book)),
+      mode_(mode),
+      recall_variant_(recall_variant),
+      theme_index_(theme_index),
+      use_theme_background_(use_theme_background) {}
 
 int DrillSession::Run() {
   using namespace ftxui;
 
-  const Palette palette = Theme();
+  const Palette palette = ThemeByIndex(theme_index_, use_theme_background_);
   std::vector<WordBookItem> items = FilterItems(book_, mode_);
   if (items.empty()) {
     return 0;
@@ -253,14 +262,14 @@ int DrillSession::Run() {
   auto renderer = Renderer(input, [&] {
     if (finished || index >= items.size()) {
       const CompanionState companion = BuildCompanionState(book_, correct, wrong, index);
-      return vbox({
+      return vbox(Elements{
                  text(book_.meta.title) | bold,
                  separator(),
                  text("本轮训练完成，正在返回。") | color(palette.success),
                  separator(),
                  text(companion.speech) | color(palette.text),
              }) |
-             borderRounded | bgcolor(palette.background) | color(palette.text) | size(WIDTH, GREATER_THAN, 56);
+             borderRounded | color(palette.text) | size(WIDTH, GREATER_THAN, 56);
     }
 
     const WordBookItem& item = items[index];
@@ -277,7 +286,7 @@ int DrillSession::Run() {
 
     Element reveal_box = TinyPanel(
         "正确答案",
-        vbox({
+        vbox(Elements{
             text(RevealAnswer(item, mode_, recall_variant_)) | bold | color(palette.success),
             text(item.term + "  ·  " + item.meaning) | color(palette.muted),
         }),
@@ -294,32 +303,24 @@ int DrillSession::Run() {
         }),
         palette);
 
-    Element companion_panel = TinyPanel(
-        companion.name + " · " + companion.mood,
-        vbox({
-            text(companion.ascii_art) | color(palette.text),
-            text(companion.speech) | color(palette.muted),
-        }),
-        palette);
+    Element companion_panel = CompanionPanel(companion, palette);
 
     Elements body;
-    body.push_back(hbox({
+    body.push_back(hbox(Elements{
         text(book_.meta.title) | bold,
         filler(),
         text(ModeTitle(mode_, recall_variant_)) | color(palette.accent),
     }));
     body.push_back(separator());
-    body.push_back(hbox({
+    body.push_back(hbox(Elements{
         StatChip("进度", std::to_string(index + 1) + "/" + std::to_string(items.size()), palette, palette.info),
         StatChip("答对", std::to_string(correct), palette, palette.success),
         StatChip("答错", std::to_string(wrong), palette, palette.warning),
     }));
     body.push_back(separator());
-    body.push_back(hbox({
-        prompt_panel | flex,
-        separator(),
-        companion_panel | size(WIDTH, EQUAL, 28),
-    }));
+    body.push_back(prompt_panel);
+    body.push_back(separator());
+    body.push_back(companion_panel);
     body.push_back(separator());
     body.push_back(answer_box);
 
@@ -336,8 +337,11 @@ int DrillSession::Run() {
     body.push_back(separator());
     body.push_back(text("Enter 提交    Tab 看答案 / 下一题    Esc 返回") | color(palette.muted));
 
-    return vbox(std::move(body)) | borderRounded | bgcolor(palette.background) | color(palette.text) |
-           size(WIDTH, GREATER_THAN, 76);
+    Element root = vbox(std::move(body)) | borderRounded | color(palette.text) | size(WIDTH, GREATER_THAN, 76);
+    if (palette.use_background) {
+      root = root | bgcolor(palette.background);
+    }
+    return root;
   });
 
   auto app = CatchEvent(renderer, [&](Event event) {
