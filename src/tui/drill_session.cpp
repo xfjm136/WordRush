@@ -98,24 +98,32 @@ std::string PrimaryMeaning(const WordBookItem& item) {
 }
 
 Element StatChip(const std::string& label, const std::string& value, const Palette& palette, Color tone) {
-  return vbox({
+  Element chip = vbox({
              text(label) | color(palette.subtle),
              text(value) | bold | color(tone),
          }) |
-         borderRounded | bgcolor(palette.surface);
+         borderRounded;
+  if (palette.use_background) {
+    chip = chip | bgcolor(palette.surface);
+  }
+  return chip;
 }
 
 Element TinyPanel(const std::string& title, Element body, const Palette& palette) {
-  return vbox({
+  Element panel = vbox({
              text(title) | bold | color(palette.text),
              separator(),
              std::move(body),
          }) |
-         borderRounded | bgcolor(palette.surface);
+         borderRounded;
+  if (palette.use_background) {
+    panel = panel | bgcolor(palette.surface);
+  }
+  return panel;
 }
 
 Element CompanionPanel(const CompanionState& companion, const Palette& palette) {
-  return vbox(Elements{
+  Element panel = vbox(Elements{
              hbox(Elements{
                  text(companion.name) | bold | color(palette.green),
                  filler(),
@@ -126,7 +134,11 @@ Element CompanionPanel(const CompanionState& companion, const Palette& palette) 
              text(companion.mood + " · " + companion.posture) | color(palette.muted),
              text(companion.speech) | color(palette.text),
          }) |
-         borderRounded | bgcolor(palette.surface_alt);
+         borderRounded;
+  if (palette.use_background) {
+    panel = panel | bgcolor(palette.surface_alt);
+  }
+  return panel;
 }
 
 std::string BuildPrompt(const WordBookItem& item, DrillMode mode, RecallVariant recall_variant) {

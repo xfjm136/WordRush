@@ -57,12 +57,16 @@ std::vector<ShortcutSpec> BuildShortcuts(const Palette& palette) {
 }
 
 Element Section(const std::string& title, Element body, const Palette& palette) {
-  return vbox({
+  Element section = vbox({
              text(title) | bold | color(palette.text),
              separator(),
              std::move(body),
          }) |
-         borderRounded | bgcolor(palette.surface);
+         borderRounded;
+  if (palette.use_background) {
+    section = section | bgcolor(palette.surface);
+  }
+  return section;
 }
 
 Element BookRow(const WordBookOverview& book, bool selected, const Palette& palette) {
@@ -78,8 +82,11 @@ Element BookRow(const WordBookOverview& book, bool selected, const Palette& pale
                 }) |
                 borderRounded;
 
-  return selected ? row | bgcolor(palette.focus) | color(palette.text)
-                  : row | bgcolor(palette.surface_alt) | color(palette.text);
+  if (palette.use_background) {
+    return selected ? row | bgcolor(palette.focus) | color(palette.text)
+                    : row | bgcolor(palette.surface_alt) | color(palette.text);
+  }
+  return selected ? row | bold | color(palette.text) : row | color(palette.text);
 }
 
 Element StatLine(const std::string& label, const std::string& value, const Palette& palette, Color tone) {
@@ -100,7 +107,7 @@ Element ShortcutLine(const ShortcutSpec& spec, const Palette& palette) {
 
 Element CompanionCard(const CompanionState& companion, const Palette& palette) {
   std::string action_line = companion.actions.empty() ? "陪你背词" : companion.actions.front();
-  return vbox({
+  Element card = vbox({
              hbox({
                  text(companion.name) | bold | color(palette.green),
                  filler(),
@@ -111,11 +118,15 @@ Element CompanionCard(const CompanionState& companion, const Palette& palette) {
              separator(),
              text(companion.speech) | color(palette.text),
          }) |
-         borderRounded | bgcolor(palette.surface_alt);
+         borderRounded | color(palette.text);
+  if (palette.use_background) {
+    card = card | bgcolor(palette.surface_alt);
+  }
+  return card;
 }
 
 Element HelpModal(const Palette& palette) {
-  return vbox({
+  Element modal = vbox({
              text("帮助") | bold,
              separator(),
              text("j / k: 切换词本"),
@@ -128,7 +139,11 @@ Element HelpModal(const Palette& palette) {
              text("Enter: 看今天建议"),
              text("q / Esc: 返回"),
          }) |
-         borderRounded | bgcolor(palette.focus) | color(palette.text) | size(WIDTH, EQUAL, 44);
+         borderRounded | color(palette.text) | size(WIDTH, EQUAL, 44);
+  if (palette.use_background) {
+    modal = modal | bgcolor(palette.focus);
+  }
+  return modal;
 }
 
 Element PlanModal(const WordBookOverview& book,
@@ -148,8 +163,11 @@ Element PlanModal(const WordBookOverview& book,
   }
   lines.push_back(separator());
   lines.push_back(text("Esc / q 返回") | color(palette.green));
-  return vbox(std::move(lines)) | borderRounded | bgcolor(palette.focus) | color(palette.text) |
-         size(WIDTH, EQUAL, 52);
+  Element modal = vbox(std::move(lines)) | borderRounded | color(palette.text) | size(WIDTH, EQUAL, 52);
+  if (palette.use_background) {
+    modal = modal | bgcolor(palette.focus);
+  }
+  return modal;
 }
 
 std::string ReadLine(const std::string& prompt) {
@@ -263,13 +281,17 @@ int Dashboard::Run() {
       const std::vector<ShortcutSpec> shortcuts = BuildShortcuts(palette);
 
       if (books_.empty()) {
-        return vbox({
+        Element empty = vbox({
                    text("WordRush") | bold | color(palette.blue),
                    separator(),
                    text("还没有词本。") | bold,
                    text("按 m 导入一个词本，或者把 TSV 放到 data/library/books。") | color(palette.muted),
                }) |
-               borderRounded | bgcolor(palette.surface) | color(palette.text);
+               borderRounded | color(palette.text);
+        if (palette.use_background) {
+          empty = empty | bgcolor(palette.surface);
+        }
+        return empty;
       }
 
       selected = std::min(selected, books_.size() - 1);
@@ -395,8 +417,10 @@ int Dashboard::Run() {
                             filler(),
                             hbox(Elements{filler(), HelpModal(palette), filler()}),
                             filler(),
-                        }) |
-                        bgcolor(palette.overlay);
+                        });
+        if (palette.use_background) {
+          modal = modal | bgcolor(palette.overlay);
+        }
         return dbox({layout, modal});
       }
 
@@ -405,8 +429,10 @@ int Dashboard::Run() {
                             filler(),
                             hbox(Elements{filler(), PlanModal(current, shortcuts, plan, palette), filler()}),
                             filler(),
-                        }) |
-                        bgcolor(palette.overlay);
+                        });
+        if (palette.use_background) {
+          modal = modal | bgcolor(palette.overlay);
+        }
         return dbox({layout, modal});
       }
 
